@@ -8,6 +8,13 @@
         Processing...
     </td>
 </tr>
+{% elif doc.status == 'ignored' %}
+<tr id="doc-row-{{ doc.id }}" class="align-middle">
+    <td>{{ doc.original_filename }}</td>
+    <td colspan="3" class="text-danger text-center">
+        <span class="fw-bold">Error:</span> Processing failed. File moved to error directory.
+    </td>
+</tr>
 {% else %}
 <tr id="doc-row-{{ doc.id }}" class="align-middle">
     <td>{{ doc.original_filename }}</td>
