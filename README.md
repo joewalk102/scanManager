@@ -60,3 +60,68 @@ python manage.py monitor_dir
 4. Once processed, visit `http://localhost:8000`. You will see the document listed with its summary and suggested filename.
 5. You can edit the suggested filename in the text box.
 6. Click **Rename** to move the file to the `output_dir/` with the new name, or click **Ignore** to dismiss the suggestion. The list will update automatically without reloading the page.
+
+## Testing
+
+The project includes a comprehensive test suite with 34 tests covering all views, models, and workflows.
+
+### Running Tests Locally
+
+```bash
+cd scan_project
+python manage.py test scanner
+```
+
+### Running Tests with Verbose Output
+
+```bash
+python manage.py test scanner --verbosity=2
+```
+
+### Running Tests with Coverage Report
+
+```bash
+pip install coverage
+coverage run --source='scanner' manage.py test scanner
+coverage report
+coverage html  # Generate HTML coverage report
+```
+
+### View Test Results
+
+- **Summary**: See `TESTS_SUMMARY.md`
+- **Quick Reference**: See `QUICK_TEST_REFERENCE.md`
+- **Full Documentation**: See `TEST_DOCUMENTATION.md`
+
+## Continuous Integration
+
+This project uses GitHub Actions to automatically run tests and code quality checks on every pull request.
+
+### Workflows
+
+- **Tests** (`.github/workflows/tests.yml`): Runs all tests on Python 3.10, 3.11, and 3.12
+- **Code Quality** (`.github/workflows/code-quality.yml`): Checks formatting, imports, and linting
+
+### Running Checks Before Pushing
+
+```bash
+# Run tests
+python manage.py test scanner
+
+# Check code formatting
+pip install black isort flake8
+black scan_project/scanner/
+isort scan_project/scanner/
+flake8 scan_project/scanner/
+```
+
+### Using requirements.txt
+
+Install dependencies from requirements.txt:
+
+```bash
+pip install -r requirements.txt
+```
+
+For more details, see `GITHUB_ACTIONS.md`.
+

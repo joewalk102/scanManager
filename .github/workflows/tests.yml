@@ -1,0 +1,72 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13', '3.14']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Create .env file
+      run: |
+        cd scan_project
+        cat > .env << EOF
+        DEBUG=False
+        SECRET_KEY=test-secret-key-for-ci
+        ALLOWED_HOSTS=*
+        DATABASE_URL=sqlite:///db.sqlite3
+        INPUT_DIR=/tmp/input
+        OUTPUT_DIR=/tmp/output
+        ERROR_DIR=/tmp/error
+        OLLAMA_HOST=http://localhost:11434
+        OLLAMA_MODEL=gemma4
+        EOF
+
+    - name: Run database migrations
+      run: |
+        cd scan_project
+        python manage.py migrate
+
+    - name: Run tests
+      run: |
+        cd scan_project
+        python manage.py test scanner --verbosity=2
+
+    - name: Run tests with coverage
+      run: |
+        cd scan_project
+        coverage run --source='scanner' manage.py test scanner
+        coverage report
+      continue-on-error: true
+
+
+
