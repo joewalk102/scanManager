@@ -1,27 +1,23 @@
 import os
 import shutil
 
-import environ
-from django.conf import settings
 from django.db.models import Max
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 
+from scan_project import config
+
 from .models import ScannedDocument
 
-env = environ.Env()
-environ.Env.read_env(os.path.join(settings.BASE_DIR, ".env"))
-OUTPUT_DIR = env("OUTPUT_DIR", default="/Users/jwalker/air/scanManager/output_dir")
+OUTPUT_DIR = config.OUTPUT_DIR
 
 
 def document_list(request):
-    documents = list(
-        ScannedDocument.objects.filter(status__in=["pending", "processing"]).order_by(
-            "-created_at"
-        )
-    )
-    max_id = max([d.id for d in documents], default=0)
+    documents = ScannedDocument.objects.filter(
+        status__in=["pending", "processing"]
+    ).order_by("-created_at")
+    max_id = documents.aggregate(max_id=Max("id"))["max_id"] or 0
     return render(
         request,
         "scanner/document_list.html",
@@ -47,7 +43,7 @@ def poll_new_documents(request):
     if not new_docs:
         return HttpResponse("")
 
-    new_max = max(doc.id for doc in new_docs)
+    new_max = new_docs.aggregate(max_id=Max("id"))["max_id"] or last_id
 
     html = ""
     for doc in new_docs:
@@ -78,7 +74,7 @@ def ignore_document(request, doc_id):
         try:
             if os.path.exists(doc.original_path):
                 os.remove(doc.original_path)
-        except Exception as e:
+        except OSError as e:
             print(f"Error deleting ignored file {doc.original_path}: {e}")
 
         return HttpResponse("")  # Return empty response to remove the row via HTMX
@@ -121,7 +117,7 @@ def rename_document(request, doc_id):
             doc.suggested_filename = new_filename
             doc.save()
             return HttpResponse("")  # Return empty response to remove the row via HTMX
-        except Exception as e:
+        except (OSError, IOError) as e:
             return error_row(doc_id, f"Failed to move file: {e}")
 
     return HttpResponse("Invalid request", status=400)
