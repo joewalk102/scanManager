@@ -2,6 +2,7 @@ from django.db import models
 
 class ScannedDocument(models.Model):
     STATUS_CHOICES = (
+        ('processing', 'Processing'),
         ('pending', 'Pending'),
         ('ignored', 'Ignored'),
         ('renamed', 'Renamed'),
@@ -9,6 +10,7 @@ class ScannedDocument(models.Model):
 
     original_path = models.CharField(max_length=512)
     original_filename = models.CharField(max_length=255)
+    file_hash = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     suggested_filename = models.CharField(max_length=255)
     summary = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

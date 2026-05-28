@@ -1,0 +1,38 @@
+{% if doc.status == 'processing' %}
+<tr id="doc-row-{{ doc.id }}" class="align-middle" hx-get="{% url 'document_row' doc.id %}" hx-trigger="every 3s" hx-swap="outerHTML">
+    <td>{{ doc.original_filename }}</td>
+    <td colspan="3" class="text-center text-muted">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        Processing...
+    </td>
+</tr>
+{% else %}
+<tr id="doc-row-{{ doc.id }}" class="align-middle">
+    <td>{{ doc.original_filename }}</td>
+    <td>
+        <div style="max-height: 150px; overflow-y: auto;">
+            {{ doc.summary|linebreaks }}
+        </div>
+    </td>
+    <td>
+        <form id="form-{{ doc.id }}" hx-post="{% url 'rename_document' doc.id %}" hx-target="#doc-row-{{ doc.id }}" hx-swap="outerHTML swap:0.5s">
+            {% csrf_token %}
+            <input type="text" name="new_filename" class="form-control" value="{{ doc.suggested_filename }}">
+        </form>
+    </td>
+    <td>
+        <div class="d-flex flex-column gap-2">
+            <button type="submit" form="form-{{ doc.id }}" class="btn btn-success btn-sm">Rename</button>
+            <button type="button" class="btn btn-danger btn-sm" 
+                    hx-post="{% url 'ignore_document' doc.id %}" 
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                    hx-target="#doc-row-{{ doc.id }}" 
+                    hx-swap="outerHTML swap:0.5s">
+                Ignore
+            </button>
+        </div>
+    </td>
+</tr>
+{% endif %}

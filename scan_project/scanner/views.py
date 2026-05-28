@@ -10,9 +10,33 @@ env = environ.Env()
 environ.Env.read_env(os.path.join(settings.BASE_DIR, '.env'))
 OUTPUT_DIR = env('OUTPUT_DIR', default='/Users/jwalker/air/scanManager/output_dir')
 
+from django.template.loader import render_to_string
+from django.db.models import Max
+
 def document_list(request):
-    documents = ScannedDocument.objects.filter(status='pending').order_by('-created_at')
-    return render(request, 'scanner/document_list.html', {'documents': documents})
+    documents = ScannedDocument.objects.filter(status__in=['pending', 'processing']).order_by('-created_at')
+    max_id = ScannedDocument.objects.aggregate(Max('id'))['id__max'] or 0
+    return render(request, 'scanner/document_list.html', {'documents': documents, 'max_id': max_id})
+
+def document_row(request, doc_id):
+    doc = get_object_or_404(ScannedDocument, id=doc_id)
+    return render(request, 'scanner/partials/document_row.html', {'doc': doc})
+
+def poll_new_documents(request):
+    last_id = int(request.GET.get('last_id', 0))
+    new_docs = ScannedDocument.objects.filter(id__gt=last_id, status__in=['pending', 'processing']).order_by('-created_at')
+    
+    if not new_docs:
+        return HttpResponse("")
+    
+    new_max = max(doc.id for doc in new_docs)
+    
+    html = ""
+    for doc in new_docs:
+        html += render_to_string('scanner/partials/document_row.html', {'doc': doc}, request=request)
+        
+    oob_input = f'<input type="hidden" id="last_id" name="last_id" value="{new_max}" hx-swap-oob="true">'
+    return HttpResponse(html + oob_input)
 
 def ignore_document(request, doc_id):
     if request.method == "POST":

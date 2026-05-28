@@ -28,41 +28,32 @@
                 </thead>
                 <tbody id="document-list">
                     {% for doc in documents %}
-                    <tr id="doc-row-{{ doc.id }}" class="align-middle">
-                        <td>{{ doc.original_filename }}</td>
-                        <td>
-                            <div style="max-height: 150px; overflow-y: auto;">
-                                {{ doc.summary|linebreaks }}
-                            </div>
-                        </td>
-                        <td>
-                            <form id="form-{{ doc.id }}" hx-post="{% url 'rename_document' doc.id %}" hx-target="#doc-row-{{ doc.id }}" hx-swap="outerHTML swap:0.5s">
-                                {% csrf_token %}
-                                <input type="text" name="new_filename" class="form-control" value="{{ doc.suggested_filename }}">
-                            </form>
-                        </td>
-                        <td>
-                            <div class="d-flex flex-column gap-2">
-                                <button type="submit" form="form-{{ doc.id }}" class="btn btn-success btn-sm">Rename</button>
-                                <button type="button" class="btn btn-danger btn-sm" 
-                                        hx-post="{% url 'ignore_document' doc.id %}" 
-                                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                        hx-target="#doc-row-{{ doc.id }}" 
-                                        hx-swap="outerHTML swap:0.5s">
-                                    Ignore
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                        {% include 'scanner/partials/document_row.html' %}
                     {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted py-4">No pending documents found.</td>
-                    </tr>
+                        <tr id="empty-row">
+                            <td colspan="4" class="text-center text-muted py-4">No pending documents found.</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        <input type="hidden" id="last_id" name="last_id" value="{{ max_id|default:0 }}">
+        <div hx-get="{% url 'poll_new_documents' %}" 
+             hx-trigger="every 3s" 
+             hx-include="#last_id" 
+             hx-swap="afterbegin" 
+             hx-target="#document-list"
+             style="display:none;"></div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            const emptyRow = document.getElementById('empty-row');
+            const tbody = document.getElementById('document-list');
+            if (emptyRow && tbody && tbody.children.length > 1) {
+                emptyRow.remove();
+            }
+        });
+    </script>
 </body>
 </html>
